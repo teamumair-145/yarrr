@@ -19,8 +19,15 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = 500 * 1024 * 1024  # 500 MB max upload
 
 ALLOWED_EXTENSIONS = {
+# Images
     "png", "jpg", "jpeg", "gif", "webp",
-    "mp4", "mov", "avi", "webm",
+    "bmp", "heic", "heif", "tiff", "tif", "avif",
+
+    # Videos
+    "mp4", "mov", "avi", "webm", "mkv",
+    "3gp", "3gpp", "3g2", "m4v",
+    "mpeg", "mpg", "ts", "mts", "m2ts",
+    "wmv", "flv", "f4v", "asf", "ogv",
 }
 
 TIKTOK_PRIVACY_LEVELS = {
@@ -117,7 +124,11 @@ def create_post():
             return jsonify(success=False, message="Unsupported file type."), 400
         filename = secure_filename(media_file.filename)
         ext = filename.rsplit(".", 1)[1].lower()
-        media_type = "video" if ext in {"mp4", "mov", "avi", "webm"} else "image"
+        media_type = "video" if ext in {"mp4", "mov", "avi", "webm", "mkv",
+    "3gp", "3gpp", "3g2", "m4v",
+    "mpeg", "mpg", "ts", "mts", "m2ts",
+    "wmv", "flv", "f4v", "asf", "ogv"} 
+        else "image"
         filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
 
         media_file.save(filepath)
