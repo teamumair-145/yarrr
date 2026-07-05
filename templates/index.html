@@ -84,7 +84,8 @@
           </label>
 
           <div id="dropzone" class="relative cursor-pointer rounded-xl border-2 border-dashed p-8 sm:p-12 text-center transition-all duration-300 group border-white/20 hover:border-cyan-400/50 hover:bg-white/5" tabindex="0">
-<input type="file" id="media-input" name="media" accept="image/*,video/*">
+<input type="file" id="media-input-image" name="media" accept="image/*" style="display:none">
+<input type="file" id="media-input-video" name="media" accept="video/*" style="display:none">
             <div id="dropzone-empty" class="flex flex-col items-center gap-3">
               <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-cyan-500/20 to-teal-500/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                 <svg class="w-6 h-6 sm:w-7 sm:h-7 text-cyan-400" viewBox="0 0 24 24" fill="none"><path d="M12 16V4M12 4L7 9M12 4l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -94,6 +95,10 @@
                 <p class="text-gray-400 text-xs sm:text-sm mt-1">or <span class="text-cyan-400">browse files</span></p>
               </div>
               <p class="text-gray-500 text-xs">MP4, MOV, WEBM, JPG, PNG · up to 500MB</p>
+              <div class="flex items-center gap-4 mt-1" onclick="event.stopPropagation()">
+                <button type="button" id="pick-image-btn" class="text-cyan-400 text-xs sm:text-sm underline">📷 Add Photo</button>
+                <button type="button" id="pick-video-btn" class="text-cyan-400 text-xs sm:text-sm underline">🎬 Add Video</button>
+              </div>
             </div>
 
             <div id="dropzone-filled" class="hidden relative group/preview" onclick="event.stopPropagation()">
@@ -214,7 +219,8 @@
 (function () {
   var form = document.getElementById('post-form');
   var dropzone = document.getElementById('dropzone');
-  var mediaInput = document.getElementById('media-input');
+  var mediaInputImage = document.getElementById('media-input-image');
+  var mediaInputVideo = document.getElementById('media-input-video');
   var dzEmpty = document.getElementById('dropzone-empty');
   var dzFilled = document.getElementById('dropzone-filled');
   var previewVideo = document.getElementById('preview-video');
@@ -271,7 +277,8 @@
   }
 
   function clearMedia() {
-    mediaInput.value = '';
+    mediaInputImage.value = '';
+    mediaInputVideo.value = '';
     dzFilled.classList.add('hidden');
     dzEmpty.classList.remove('hidden');
     if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); previewObjectUrl = null; }
@@ -279,12 +286,22 @@
     previewImage.removeAttribute('src');
   }
 
-  dropzone.addEventListener('click', function () { mediaInput.click(); });
+  document.getElementById('pick-image-btn').addEventListener('click', function () { mediaInputImage.click(); });
+  document.getElementById('pick-video-btn').addEventListener('click', function () { mediaInputVideo.click(); });
   dropzone.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); mediaInput.click(); }
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); mediaInputImage.click(); }
   });
-  mediaInput.addEventListener('change', function () {
-    if (mediaInput.files && mediaInput.files[0]) renderPreview(mediaInput.files[0]);
+  mediaInputImage.addEventListener('change', function () {
+    if (mediaInputImage.files && mediaInputImage.files[0]) {
+      mediaInputVideo.value = '';
+      renderPreview(mediaInputImage.files[0]);
+    }
+  });
+  mediaInputVideo.addEventListener('change', function () {
+    if (mediaInputVideo.files && mediaInputVideo.files[0]) {
+      mediaInputImage.value = '';
+      renderPreview(mediaInputVideo.files[0]);
+    }
   });
   fileRemove.addEventListener('click', function (e) { e.stopPropagation(); clearMedia(); });
 
@@ -303,7 +320,9 @@
   dropzone.addEventListener('drop', function (e) {
     var files = e.dataTransfer.files;
     if (files && files[0]) {
-      mediaInput.files = files;
+      var isVideo = files[0].type.indexOf('video') === 0;
+      if (isVideo) { mediaInputVideo.files = files; mediaInputImage.value = ''; }
+      else { mediaInputImage.files = files; mediaInputVideo.value = ''; }
       renderPreview(files[0]);
     }
   });
@@ -409,6 +428,10 @@
     }
 
     var formData = new FormData(form);
+    formData.delete('media');
+    var activeFile = (mediaInputImage.files && mediaInputImage.files[0]) ||
+                      (mediaInputVideo.files && mediaInputVideo.files[0]);
+    if (activeFile) formData.append('media', activeFile);
     var xhr = new XMLHttpRequest();
 
     setLoading(true);
